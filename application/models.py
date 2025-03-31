@@ -1,60 +1,132 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils.translation import gettext_lazy as _
+from django.utils import timezone
 
-# Create your models here.
 class Role(models.Model):
-    id = models.AutoField(db_column='id', primary_key=True)
-    name = models.CharField(db_column='name', max_length=20, db_collation='Cyrillic_General_CI_AS', verbose_name="Название роли")
+    MANAGER = 1
+    EXECUTOR = 2
+    
+    ROLE_CHOICES = (
+        (MANAGER, 'Руководитель'),
+        (EXECUTOR, 'Исполнитель'),
+    )
+    
+    id = models.PositiveSmallIntegerField(choices=ROLE_CHOICES, primary_key=True)
+    name = models.CharField(max_length=20, verbose_name="Название роли")
 
     class Meta:
         verbose_name = "Роль"
         verbose_name_plural = "Роли"
 
-    def __str__(self) -> str:
+    def __str__(self):
         return self.name
 
 class User(AbstractUser):
-    # Основные поля
-    last_name = models.CharField(_('Фамилия'), max_length=150)  # Оставляем для ФИО
-    first_name = models.CharField(_('Имя'), max_length=150)     # Оставляем для ФИО
-    patronymic = models.CharField(_('Отчество'), max_length=150, blank=True)  # Добавляем отчество
-    email = models.EmailField(_('Email'), unique=True)          # Делаем email обязательным и уникальным
-    phone = models.CharField(_('Телефон'), max_length=20, blank=True)
-    position = models.CharField(_('Должность'), max_length=100, blank=True)
+    # Переопределяем стандартные поля
+    username = models.CharField(
+        _('ФИО'),
+        max_length=150,
+        help_text=_('Фамилия Имя Отчество')
+    )
+    email = models.EmailField(
+        _('Email'),
+        unique=True,
+        error_messages={
+            'unique': _("Пользователь с таким email уже существует."),
+        }
+    )
+    phone = models.CharField(_('Телефон'), max_length=20)
+    position = models.CharField(_('Должность'), max_length=100)
     role = models.ForeignKey(
-        'Role', 
-        on_delete=models.PROTECT, 
+        'Role',
+        on_delete=models.PROTECT,
         verbose_name=_('Роль'),
-        null=False  # Убираем null, если роль обязательна
+        null=True,
+        blank=True
     )
     
     # Настройки аутентификации
-    username = None  # Отключаем стандартное поле username
-    USERNAME_FIELD = 'email'  # Используем email для входа
-    REQUIRED_FIELDS = ['first_name', 'last_name']  # Обязательные поля при создании пользователя
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username', 'phone', 'position']
     
     class Meta:
         verbose_name = _('Пользователь')
         verbose_name_plural = _('Пользователи')
     
     def __str__(self):
-        return f"{self.get_full_name()} ({self.email})"
+        return self.username
     
-    def get_full_name(self):
-        """Возвращает полное ФИО"""
-        return f"{self.last_name} {self.first_name} {self.patronymic}".strip()
+
     
-    def get_short_name(self):
-        """Возвращает краткое имя (Фамилия И.О.)"""
-        patronymic_initial = f"{self.patronymic[0]}." if self.patronymic else ""
-        return f"{self.last_name} {self.first_name[0]}.{patronymic_initial}"
-    
-    @property
-    def is_manager(self):
-        return self.role_id == Role.MANAGER
-    
-    @property
-    def is_executor(self):
-        return self.role_id == Role.EXECUTOR
-    
+class Task(models.Model):
+    name = models.CharField(max_length=50, verbose_name="Название задачи")
+    description = models.CharField(max_length=250, verbose_name="Описание задачи")
+    date_start = models.DateTimeField(verbose_name="Дата начала", default=timezone.now)
+    date_end = models.DateTimeField(verbose_name="Дата окончания", default=timezone.now)
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        verbose_name='Выполняющий',
+        null=True
+    )
+
+    class Meta:
+        verbose_name = "Задача"
+        verbose_name_plural = "Задачи"
+
+    def __str__(self):
+        return self.name
+
+class TaskSheet(models.Model):
+    name = models.CharField(max_length=50, verbose_name="Название листа")
+    creation_date = models.DateTimeField(
+        verbose_name="Дата и время создания",
+        default=timezone.now,  # Автоматически устанавливает текущее время при создании
+        editable=False  # Чтобы нельзя было изменить вручную через админку
+    )
+    confirmed = models.BooleanField(verbose_name="Завершено")
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        verbose_name='Руководитель',
+        null=True
+    )
+
+    class Meta:
+        verbose_name = "Лист задач"
+        verbose_name_plural = "Листы задач"
+
+    def __str__(self):
+        return self.name
+
+class Comment(models.Model):
+    text = models.CharField(max_length=100, verbose_name="Текст комментария")
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        verbose_name='Пользователь',
+        null=True
+    )
+    date = models.DateTimeField(
+        verbose_name="Дата и время создания",
+        default=timezone.now,  # Автоматически устанавливает текущее время при создании
+        editable=False  # Чтобы нельзя было изменить вручную через админку
+    )
+
+    class Meta:
+        verbose_name = "Комментарий"
+        verbose_name_plural = "Комментарии"
+
+    def __str__(self):
+        return self.text
+
+class Status(models.Model):
+    name = models.CharField(max_length=20, verbose_name="Название статуса")
+
+    class Meta:
+        verbose_name = "Статус"
+        verbose_name_plural = "Статусы"
+
+    def __str__(self):
+        return self.name
