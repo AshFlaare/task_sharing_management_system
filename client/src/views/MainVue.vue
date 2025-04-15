@@ -2,9 +2,30 @@
 import { storeToRefs } from "pinia";
 import { RouterLink } from "vue-router";
 import useUserStore from "@/stores/userStore";
+import {ref, onBeforeMount } from 'vue';
+
+import axios from "axios";
 
 const userStore = useUserStore();
 const { isAuthenticated, username, role } = storeToRefs(userStore);
+const hasUnread = ref(false);
+
+async function getComments() {
+  try {
+    const response = await axios.get('/api/comment/check-unread-comments/')
+    hasUnread.value = response.data.has_unread
+  } catch (error) {
+    console.error("Ошибка при проверке непрочитанных комментариев", error)
+  }
+}
+
+
+
+
+onBeforeMount((async) => {
+  getComments();
+
+})
 </script>
 
 <template>
@@ -59,9 +80,10 @@ const { isAuthenticated, username, role } = storeToRefs(userStore);
               <h5 class="card-title">
                 <i class="bi bi-list-task text-danger me-2"></i>
                 Активные листы
+                <span v-if="hasUnread" class="badge bg-warning text-dark ms-2">Непрочитанные</span>
               </h5>
               <p class="card-text">Просмотр и управление текущими заданиями</p>
-              <RouterLink to="/task-sheets/active" class="btn btn-outline-danger">
+              <RouterLink to="/sheets/review" class="btn btn-outline-danger">
                 Просмотреть <i class="bi bi-eye"></i>
               </RouterLink>
             </div>
@@ -76,7 +98,7 @@ const { isAuthenticated, username, role } = storeToRefs(userStore);
                 Архив листов
               </h5>
               <p class="card-text">Просмотр завершенных заданий</p>
-              <RouterLink to="/task-sheets/archive" class="btn btn-outline-danger">
+              <RouterLink to="/sheets-archive/review" class="btn btn-outline-danger">
                 Открыть архив <i class="bi bi-box-arrow-in-right"></i>
               </RouterLink>
             </div>
@@ -95,9 +117,10 @@ const { isAuthenticated, username, role } = storeToRefs(userStore);
               <h5 class="card-title">
                 <i class="bi bi-card-checklist text-primary me-2"></i>
                 Мои листы заданий
+                <span v-if="hasUnread" class="badge bg-warning text-dark ms-2">Непрочитанные</span>
               </h5>
               <p class="card-text">Просмотр листов задач</p>
-              <RouterLink to="/my-tasks" class="btn btn-primary px-4">
+              <RouterLink to="/my-sheets/review" class="btn btn-primary px-4">
                 <i class="bi bi-list-check me-2"></i>Перейти к листам
               </RouterLink>
             </div>

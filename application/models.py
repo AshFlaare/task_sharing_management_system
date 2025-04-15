@@ -57,27 +57,16 @@ class User(AbstractUser):
     def __str__(self):
         return self.username
     
-
-    
-class Task(models.Model):
-    name = models.CharField(max_length=50, verbose_name="Название задачи")
-    description = models.CharField(max_length=250, verbose_name="Описание задачи")
-    date_start = models.DateTimeField(verbose_name="Дата начала", default=timezone.now)
-    date_end = models.DateTimeField(verbose_name="Дата окончания", default=timezone.now)
-    user = models.ForeignKey(
-        User,
-        on_delete=models.SET_NULL,
-        verbose_name='Выполняющий',
-        null=True
-    )
+class Status(models.Model):
+    name = models.CharField(max_length=40, verbose_name="Название статуса")
 
     class Meta:
-        verbose_name = "Задача"
-        verbose_name_plural = "Задачи"
+        verbose_name = "Статус"
+        verbose_name_plural = "Статусы"
 
     def __str__(self):
         return self.name
-
+    
 class TaskSheet(models.Model):
     name = models.CharField(max_length=50, verbose_name="Название листа")
     creation_date = models.DateTimeField(
@@ -100,6 +89,39 @@ class TaskSheet(models.Model):
     def __str__(self):
         return self.name
 
+class Task(models.Model):
+    name = models.CharField(max_length=50, verbose_name="Название задачи")
+    description = models.CharField(max_length=250, verbose_name="Описание задачи")
+    date_start = models.DateTimeField(verbose_name="Дата начала", default=timezone.now)
+    date_end = models.DateTimeField(verbose_name="Дата окончания", default=timezone.now)
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        verbose_name='Выполняющий',
+        null=True
+    )
+    status = models.ForeignKey(
+        Status,
+        on_delete=models.SET_NULL,
+        verbose_name='Статус',
+        null=True
+    )
+    sheet = models.ForeignKey(
+        TaskSheet,
+        on_delete=models.SET_NULL,
+        related_name='task_set',
+        verbose_name='Лист задач',
+        null=True
+    )
+
+    class Meta:
+        verbose_name = "Задача"
+        verbose_name_plural = "Задачи"
+
+    def __str__(self):
+        return self.name
+
+
 class Comment(models.Model):
     text = models.CharField(max_length=100, verbose_name="Текст комментария")
     user = models.ForeignKey(
@@ -113,6 +135,17 @@ class Comment(models.Model):
         default=timezone.now,  # Автоматически устанавливает текущее время при создании
         editable=False  # Чтобы нельзя было изменить вручную через админку
     )
+    read = models.BooleanField(
+        verbose_name="Прочитано"
+    )
+    task = models.ForeignKey(
+        Task,
+        on_delete=models.SET_NULL,
+        related_name='comments',
+        verbose_name='Задача',
+        null=True
+    )
+
 
     class Meta:
         verbose_name = "Комментарий"
@@ -121,12 +154,3 @@ class Comment(models.Model):
     def __str__(self):
         return self.text
 
-class Status(models.Model):
-    name = models.CharField(max_length=20, verbose_name="Название статуса")
-
-    class Meta:
-        verbose_name = "Статус"
-        verbose_name_plural = "Статусы"
-
-    def __str__(self):
-        return self.name

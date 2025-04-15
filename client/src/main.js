@@ -2,6 +2,7 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 
 import "bootstrap/dist/css/bootstrap.css" // Стили Bootstrap
+import "bootstrap-icons/font/bootstrap-icons.min.css" // Иконки Bootstrap
 import "bootstrap/dist/js/bootstrap.min.js" // Скрипты Bootstrap (включая Popper.js)
 
 

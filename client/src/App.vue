@@ -20,12 +20,16 @@ onMounted(() => {
 
 <template>
   <div class="d-flex flex-column min-vh-100">
-    <!-- Навигационная панель без боковых отступов -->
+    <!-- Навигационная панель -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light px-0 shadow-sm">
-      <div class="container"> <!-- Убрали горизонтальные отступы -->
-        <h1 class="m-0">
-          <a class="navbar-brand text-dark fw-bold" href="/">Система управления совместным выполнением задач</a>
-        </h1>
+      <div class="container-fluid"> <!-- Изменили на container-fluid -->
+        <div class="d-flex align-items-center"> <!-- Добавили flex-контейнер -->
+          <h1 class="m-0 me-3"> <!-- Добавили отступ справа -->
+            <a class="navbar-brand text-dark fw-bold"><router-link to="/" class="text-dark text-decoration-none hover-primary">Система управления совместным выполнением задач</router-link></a>
+          </h1>
+          
+          
+        </div>
         
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" 
                 data-bs-target="#navbarNavAltMarkup"
@@ -41,13 +45,16 @@ onMounted(() => {
               <a class="nav-link dropdown-toggle d-flex align-items-center" 
                  href="#" role="button" data-bs-toggle="dropdown"
                  aria-expanded="false">
-                <span class="me-2">{{ username }}</span>
+                <span class="me-2 fw-bold text-danger">{{ username }}</span> <!-- Жирный текст -->
                 <i class="bi bi-person-circle"></i>
               </a>
-              <ul class="dropdown-menu dropdown-menu-end">
-                <li><button class="dropdown-item" @click="logout">
-                  <i class="bi bi-box-arrow-right me-2"></i>Выход
-                </button></li>
+              <ul class="dropdown-menu dropdown-menu-end text-center">
+                <li>
+                  <button class="dropdown-item d-flex justify-content-center align-items-center" @click="logout">
+                    <i class="bi bi-box-arrow-right me-2"></i>
+                    <span>Выход из аккаунта</span>
+                  </button>
+                </li>
               </ul>
             </li>
             <li v-else class="nav-item">
@@ -77,33 +84,45 @@ onMounted(() => {
 
 
 <!-- Подвал -->
-<footer class="bg-light text-dark py-4 mt-auto">
+<footer class="bg-light text-dark py-4 mt-auto border-top shadow-sm">
   <div class="container">
     <div class="row">
-      <div class="col-md-4 mb-4">
-        <h5>О проекте</h5>
-        <p>Это система управления совместным выполнением задач</p>
+      <!-- Блок "О проекте" -->
+      <div class="col-md-4 mb-4 mb-md-0">
+        <h5 class="fw-bold mb-3">О проекте</h5>
+        <p class="mb-0">Система управления совместным выполнением задач для эффективной организации работы</p>
       </div>
-      <div class="col-md-4 mb-4">
-        <h5>Полезные ссылки</h5>
+      
+      <!-- Блок "Полезные ссылки" -->
+      <div class="col-md-4 mb-4 mb-md-0">
+        <h5 class="fw-bold mb-3">Полезные ссылки</h5>
         <ul class="list-unstyled">
-          <li><router-link to="/" class="text-dark">Главная</router-link></li>
+          <li class="mb-2"><router-link to="/" class="text-dark text-decoration-none hover-primary">Главная</router-link></li>
         </ul>
       </div>
+      
+      <!-- Блок "Отладка" -->
       <div class="col-md-4">
-        <h5>Отладка</h5>
-        <ul class="list-unstyled ">
-          <li><strong>Authenticated:</strong> {{ isAuthenticated }}</li>
-          <li><strong>User:</strong> {{ username }}</li>
-          <li><strong>Role:</strong> {{ role }}</li>
-          <li><strong>Route:</strong> {{ route.path }}</li>
-          <li><strong @click="logout" style="color: red">Выход из аккаунта</strong></li>
+        <h5 class="fw-bold mb-3">Системная информация</h5>
+        <ul class="list-unstyled small">
+          <li class="mb-2"><span class="text-muted">Статус: </span> 
+            <span :class="{'text-success': isAuthenticated, 'text-danger': !isAuthenticated}">
+              {{ isAuthenticated ? 'Авторизован' : 'Не авторизован' }}
+            </span>
+          </li>
+          <li class="mb-2"><span class="text-muted">Пользователь:</span> {{ username || 'Гость' }}</li>
+          <li class="mb-2"><span class="text-muted">Роль:</span> {{ role || 'Не определена' }}</li>
+          <li class="mb-2"><span class="text-muted">Текущая страница:</span> {{ route.path }}</li>
+          <li v-if="isAuthenticated">
+            <button @click="logout" class="btn btn-sm btn-outline-danger p-0 border-0 text-start">
+              <i class="bi bi-box-arrow-right me-1"></i>Выход из аккаунта
+            </button>
+          </li>
         </ul>
       </div>
-      
-      
     </div>
-
+    
+    
   </div>
 </footer>
 

@@ -19,14 +19,35 @@ from django.urls import path
 
 from rest_framework.routers import DefaultRouter
 
-from application.api import UserViewset
+from application.api import UserViewset, UsersViewset, RolesViewset, ExecutorsViewset, TaskSheetViewSet, SheetViewSet, TaskViewSet, UsersSafeViewset, CommentViewset, StatusViewset, SheetExecutorViewSet
 from django.urls import path, include
 
 router = DefaultRouter()
 # router.register("users", UserViewset, basename="users")
 router.register("user", UserViewset, basename="user")
+router.register("users", UsersViewset, basename="users")
+router.register("userssafe", UsersSafeViewset, basename="userssafe")
+router.register("roles", RolesViewset, basename="roles")
+router.register("status", StatusViewset, basename="status")
+router.register("executors", ExecutorsViewset, basename="executors")
+router.register("task-sheets", TaskSheetViewSet, basename="task-sheets")
+
+
+
+router.register("sheets", SheetViewSet, basename="sheets")
+
+router.register("my-sheets/review", SheetExecutorViewSet, basename="sheets-executor")
+
+router.register(r'sheet', TaskSheetViewSet, basename='sheet')
+router.register(r'sheets/(?P<sheet_pk>\d+)/tasks', TaskViewSet, basename='task')
+
+router.register(r'comment', CommentViewset, basename='comment')
+
+
+
+
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path('api/', include(router.urls))
+    path('api/', include(router.urls)),
 ]

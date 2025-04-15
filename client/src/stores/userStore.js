@@ -16,7 +16,7 @@ const useUserStore = defineStore("UserStore", () => {
       // Если пользователь авторизован, обновляем данные
       isAuthenticated.value = response.data.is_authenticated;
       username.value = response.data.username || ""; // Обновляем имя пользователя
-      userId.value = response.data.user_id || null;
+      userId.value = response.data.userId || null;
       role.value = response.data.role_name;
       console.log("Подтянулись данные пользователя");
     } catch (error) {
@@ -65,12 +65,12 @@ const useUserStore = defineStore("UserStore", () => {
 
   return {
     isAuthenticated,
-    username,
-    userId,
+    username, 
+    userId,  
+    role,
     fetchUser,
     logout,
-    checkAuthentication,  // Экспортируем функцию для явного вызова
-    role,
+    checkAuthentication
   };
 });
 
