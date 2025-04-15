@@ -287,7 +287,7 @@
               </div>
 
               <div class="form-floating mb-3">
-                <select class="form-select" v-model="newTask.executor" required>
+                <select class="form-select" v-model="newTask.user" required>
                   <option :value="null">Не назначено</option>
                   <option v-for="executor in executors" :key="executor.id" :value="executor.id">
                     {{ executor.username }} ({{ executor.email }}) - {{ executor.position }} - {{
@@ -299,7 +299,7 @@
 
               <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
-                <button type="submit" class="btn btn-primary" @click="onTaskAddClick()">Создать</button>
+                <button type="submit" class="btn btn-primary" data-bs-dismiss="modal" @click="onTaskAddClick()">Создать</button>
               </div>
 
 
@@ -392,11 +392,26 @@ const statusesById = computed(() => {
 const newComments = ref({})
 async function onTaskAddClick() {
   try {
-    await axios.post(`/api/sheets/${sheet.value.id}/tasks/`, {
+    // Сначала создаём задачу
+    const response = await axios.post(`/api/sheets/${sheet.value.id}/tasks/`, {
       ...newTask.value
     });
+
+    const createdTask = response.data; // Здесь содержится ID новой задачи
+
+    // Затем создаём комментарий
+    await axios.post('/api/comment/write/', {
+      text: 'Задача создана',
+      task: createdTask.id
+    }, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+      }
+    });
+
     alert('Задача добавлена!');
-    await fetchSheet(); // или fetchTasks() — если ты обновляешь задачи
+    await fetchSheet(); // или fetchTasks()
+
   } catch (err) {
     console.error(err);
     alert('Ошибка при создании задачи');
