@@ -394,7 +394,8 @@ async function onTaskAddClick() {
   try {
     // Сначала создаём задачу
     const response = await axios.post(`/api/sheets/${sheet.value.id}/tasks/`, {
-      ...newTask.value
+      ...newTask.value,
+      sheet: sheet.value.id,
     });
 
     const createdTask = response.data; // Здесь содержится ID новой задачи
@@ -408,7 +409,13 @@ async function onTaskAddClick() {
         'Authorization': `Bearer ${localStorage.getItem('access_token')}`
       }
     });
-
+    newTask.value = {
+      name: '',
+      description: '',
+      date_start: '',
+      date_end: '',
+      user: null,
+    };
     alert('Задача добавлена!');
     await fetchSheet(); // или fetchTasks()
 
@@ -585,7 +592,24 @@ function toDateTimeLocalString(date) {
   d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); // сдвигаем по UTC
   return d.toISOString().slice(0, 16); // YYYY-MM-DDTHH:MM
 }
+function toISOStringWithTimezoneFix(datetimeLocal) {
+  const localDate = new Date(datetimeLocal);
+  return new Date(localDate.getTime() - localDate.getTimezoneOffset() * 60000).toISOString();
+}
+function toUTCDateString(localDateTimeString) {
+  const local = new Date(localDateTimeString);
+  return new Date(local.getTime() - local.getTimezoneOffset() * 60000).toISOString();
+}
+
+
+
 async function onTaskEditClick(task) {
+  try {
+    const response = await axios.post('/api/comment/mark-read/', { task_id: taskId });
+    console.log(response.data); // { status: "Comments marked as read" }
+  } catch (err) {
+    console.error('Ошибка при пометке комментариев как прочитанных:', err);
+  }
   taskToEdit.value = { ...task };
   taskToEdit.value.date_start = toDateTimeLocalString(task.date_start);
   taskToEdit.value.date_end = toDateTimeLocalString(task.date_end);
@@ -593,6 +617,12 @@ async function onTaskEditClick(task) {
 }
 
 async function onStatusEditClick(task) {
+  try {
+    const response = await axios.post('/api/comment/mark-read/', { task_id: task.id });
+    console.log(response.data); // { status: "Comments marked as read" }
+  } catch (err) {
+    console.error('Ошибка при пометке комментариев как прочитанных:', err);
+  }
   taskToEdit.value = { ...task }; // Копируем task в taskToEdit
   aviable_statuses = getAvailableStatuses(statusesById.value[task.status]?.name);
 }
@@ -602,12 +632,15 @@ async function onStatusEditClick(task) {
 async function onUpdateTask() {
   const sheetId = taskToEdit.value.sheet;
   const taskId = taskToEdit.value.id;
-
+  taskToEdit.value.date_start = toUTCDateString(taskToEdit.value.date_start);
+  taskToEdit.value.date_end = toUTCDateString(taskToEdit.value.date_end);
   try {
     // Обновляем задачу
     await axios.put(`/api/sheets/${sheetId}/tasks/${taskId}/`, {
-      ...taskToEdit.value
-    });
+    ...taskToEdit.value,
+    date_start: toISOStringWithTimezoneFix(taskToEdit.value.date_start),
+    date_end: toISOStringWithTimezoneFix(taskToEdit.value.date_end),
+  });
 
     var systemComment;
     // Добавляем системный комментарий

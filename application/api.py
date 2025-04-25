@@ -216,15 +216,54 @@ class SheetViewSet(
 class TaskViewSet(viewsets.ModelViewSet):
     queryset = Task.objects.all()
     serializer_class = TaskSerializer
-    
-    def get_queryset(self):
-        return self.queryset.filter(sheet_id=self.kwargs['sheet_pk'])
-    
+
     def perform_create(self, serializer):
-        serializer.save(
-            sheet_id=self.kwargs['sheet_pk'],
-            status=Status.objects.get(name='Ожидание подтверждения')
-        )
+        sheet_id = self.kwargs['sheet_pk']
+        now = timezone.now()
+        statuses = {s.name: s for s in Status.objects.all()}
+        data = serializer.validated_data
+
+        date_start = data.get('date_start')
+        date_end = data.get('date_end')
+
+        # Если вручную выбран статус, оставляем его
+        current_status = data.get('status')
+        new_status = current_status if current_status else None
+
+        if not new_status:  # Устанавливаем статус по времени, если он не был выбран вручную
+            if date_start and date_start > now:
+                new_status = statuses.get('Запланировано')
+            elif date_start and date_end and date_start <= now <= date_end:
+                new_status = statuses.get('Ожидание подтверждения')
+            elif date_end and date_end < now:
+                new_status = statuses.get('Задерживается')
+
+        serializer.save(sheet_id=sheet_id, status=new_status)
+        
+    def get_queryset(self):
+        queryset = self.queryset.filter(sheet_id=self.kwargs['sheet_pk'])
+
+        now = timezone.now()
+        statuses = {s.name: s for s in Status.objects.all()}
+
+        for task in queryset:
+            if not task.status or task.status.name == 'Выполнено' or task.status.name == 'Возникла проблема' or task.status.name == 'Не актуально':
+                continue  # Не меняем статус на "Запланировано" или "Ожидание подтверждения", если уже возникла проблема
+
+            new_status = None
+            if task.date_start > now:
+                new_status = statuses.get('Запланировано')
+            elif task.date_start <= now <= task.date_end:
+                new_status = statuses.get('Ожидание подтверждения')
+            elif task.date_end < now:
+                new_status = statuses.get('Задерживается')
+
+            if new_status and new_status != task.status:
+                task.status = new_status
+                task.save(update_fields=["status"])
+
+        return queryset
+
 
 
 
