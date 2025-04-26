@@ -2,19 +2,32 @@
   <div class="sheets-container">
     <h1 class="title">Список активных листов</h1>
 
+
+
+    <!-- Только для менеджеров -->
+    <div v-if="role === 'Manager'" class="mb-4">
+      <h2 class="mb-3">Аналитика по задачам</h2>
+
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <div class="p-3 border rounded bg-light">
+            <strong>Всего листов:</strong> {{ sheets.length }}<br />
+            <strong>Всего задач:</strong> {{ totalTaskCount }}
+          </div>
+        </div>
+        <div class="col-md-6">
+          <TaskStatusChart :statusCounts="statusStats" />
+        </div>
+      </div>
+    </div>
+
+
     <div class="sheets-list">
-      <div 
-        v-for="item in sheets" 
-        :key="item.id" 
-        class="sheet-item border p-3 mb-3 rounded position-relative"
-        :class="{ 'border-warning border-3': isUnread(item.id) }"
-      >
+      <div v-for="item in sheets" :key="item.id" class="sheet-item border p-3 mb-3 rounded position-relative"
+        :class="{ 'border-warning border-3': isUnread(item.id) }">
         <!-- Ярлык сверху -->
-        <div 
-          v-if="isUnread(item.id)" 
-          class="position-absolute top-0 start-0 bg-warning text-dark px-3 py-1 rounded-bottom-end"
-          style="z-index: 1;"
-        >
+        <div v-if="isUnread(item.id)"
+          class="position-absolute top-0 start-0 bg-warning text-dark px-3 py-1 rounded-bottom-end" style="z-index: 1;">
           <i class="bi bi-chat-left-text me-1"></i>
           Есть непрочитанные комментарии
         </div>
@@ -33,8 +46,7 @@
           <div class="col-md-4">
             <strong>Статус:</strong>
             <div class="fs-5">
-              <span class="badge fs-6 px-3 py-2 rounded"
-                    :class="getTotalStatusClass(item.total_status)">
+              <span class="badge fs-6 px-3 py-2 rounded" :class="getTotalStatusClass(item.total_status)">
                 {{ item.total_status }}
               </span>
             </div>
@@ -42,10 +54,7 @@
         </div>
 
         <div class="mt-3 text-end">
-          <RouterLink 
-            :to="`/sheets/review/${item.id}`" 
-            class="btn btn-info"
-          >
+          <RouterLink :to="`/sheets/review/${item.id}`" class="btn btn-info">
             <i class="bi bi-eye"></i> Просмотреть
           </RouterLink>
         </div>
@@ -75,6 +84,27 @@ const { isAuthenticated, username, role } = storeToRefs(userStore);
 const sheets = ref([]);
 const users = ref([]);
 const sheet_unread_id = ref([]);
+
+
+
+
+
+
+
+import TaskStatusChart from './TaskStatusChart.vue'; // импорт компонента
+
+const analytics = ref({ total_tasks: 0, total_sheets: 0, status_counts: {} });
+
+async function fetchAnalytics() {
+  const res = await axios.get("/api/analytics/summary/");
+  analytics.value = res.data;
+}
+const statusStats = computed(() => analytics.value.status_counts || {});
+const totalTaskCount = computed(() => analytics.value.total_tasks || 0);
+
+
+
+
 
 const usersById = computed(() => {
   return _.keyBy(users.value, x => x.id)
@@ -124,6 +154,7 @@ onBeforeMount((async) => {
   fetchUsers();
   fetchSheets();
   fetchUnreadSheetIds();
+  fetchAnalytics();
 })
 </script>
 

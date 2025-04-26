@@ -17,6 +17,8 @@ from django.db.models import Q
 from rest_framework.viewsets import ModelViewSet
 from .permissions import IsManager
 
+from django.db.models import Count
+
 
 # class UserViewset(mixins.ListModelMixin, GenericViewSet):
 #     queryset = User.objects.all()
@@ -420,3 +422,37 @@ class SheetExecutorViewSet(
             return Response({"status": "Task status updated."}, status=status.HTTP_200_OK)
 
         return Response({"detail": "Invalid data."}, status=status.HTTP_400_BAD_REQUEST)
+    
+
+
+
+class AnalyticsViewSet(GenericViewSet):
+    
+    @action(detail=False, methods=["get"])
+    def summary(self, request):
+        archived = request.GET.get('archived')
+        sheet_id = request.GET.get('sheet_id')
+
+        if sheet_id:
+            # Аналитика по одному листу
+            tasks = Task.objects.filter(sheet_id=sheet_id)
+            total_tasks = tasks.count()
+            status_counts = tasks.values('status__name').annotate(count=Count('id'))
+        else:
+            # Общая аналитика
+            sheets = TaskSheet.objects.all()
+            if archived is not None:
+                sheets = sheets.filter(confirmed=archived.lower() == 'true')
+            tasks = Task.objects.filter(sheet__in=sheets)
+            total_tasks = tasks.count()
+            total_sheets = sheets.count()
+            status_counts = tasks.values('status__name').annotate(count=Count('id'))
+
+        result = {
+            "total_tasks": total_tasks,
+            "status_counts": {s['status__name']: s['count'] for s in status_counts}
+        }
+        if not sheet_id:
+            result["total_sheets"] = total_sheets
+
+        return Response(result)

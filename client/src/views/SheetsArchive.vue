@@ -2,6 +2,25 @@
     <div class="sheets-container">
       <h1 class="title">Список неактивных листов</h1>
       
+
+      <!-- Только для менеджеров -->
+    <div v-if="role === 'Manager'" class="mb-4">
+      <h2 class="mb-3">Аналитика по задачам</h2>
+
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <div class="p-3 border rounded bg-light">
+            <strong>Всего листов:</strong> {{ sheets.length }}<br />
+            <strong>Всего задач:</strong> {{ totalTaskCount }}
+          </div>
+        </div>
+        <div class="col-md-6">
+          <TaskStatusChart :statusCounts="statusStats" />
+        </div>
+      </div>
+    </div>
+
+
       <div class="sheets-list">
         <div v-for="item in sheets" class="sheet-item border p-3 mb-3 rounded">
           <div class="row align-items-center">
@@ -42,6 +61,17 @@
   import _ from 'lodash';
   import { debounce } from 'lodash';
   
+  import TaskStatusChart from './TaskStatusChart.vue'; // импорт компонента
+
+  const analytics = ref({ total_tasks: 0, total_sheets: 0, status_counts: {} });
+
+async function fetchAnalytics() {
+  const res = await axios.get("/api/analytics/summary/?archived=true");
+  analytics.value = res.data;
+}
+const statusStats = computed(() => analytics.value.status_counts || {});
+const totalTaskCount = computed(() => analytics.value.total_tasks || 0);
+
   
   const userStore = useUserStore();
   
@@ -70,6 +100,7 @@
   onBeforeMount((async) => {
     fetchUsers();
     fetchSheets();
+    fetchAnalytics();
   })
   </script>
   

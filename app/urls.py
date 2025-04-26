@@ -19,7 +19,7 @@ from django.urls import path
 
 from rest_framework.routers import DefaultRouter
 
-from application.api import UserViewset, UsersViewset, RolesViewset, ExecutorsViewset, TaskSheetViewSet, SheetViewSet, TaskViewSet, UsersSafeViewset, CommentViewset, StatusViewset, SheetExecutorViewSet
+from application.api import UserViewset, UsersViewset, RolesViewset, ExecutorsViewset, TaskSheetViewSet, SheetViewSet, TaskViewSet, UsersSafeViewset, CommentViewset, StatusViewset, SheetExecutorViewSet, AnalyticsViewSet
 from django.urls import path, include
 
 router = DefaultRouter()
@@ -42,6 +42,8 @@ router.register(r'sheet', TaskSheetViewSet, basename='sheet')
 router.register(r'sheets/(?P<sheet_pk>\d+)/tasks', TaskViewSet, basename='task')
 
 router.register(r'comment', CommentViewset, basename='comment')
+
+router.register(r'analytics', AnalyticsViewSet, basename='analytics')
 
 
 

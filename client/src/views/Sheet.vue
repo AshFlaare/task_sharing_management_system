@@ -6,7 +6,16 @@
       </div>
     </div>
 
+
+
+    
+
+
     <div v-else-if="sheet" class="sheet-container">
+
+
+
+      
       <!-- Шапка листа -->
       <div class="sheet-header bg-light p-4 rounded-top">
         <div class="d-flex justify-content-between align-items-center">
@@ -31,6 +40,26 @@
         </div>
       </div>
 
+
+
+<!-- Только для менеджеров -->
+<div v-if="role === 'Manager'" class="mb-4">
+  <h2 class="mb-3">Аналитика по задачам</h2>
+
+  <div class="row mb-3">
+    <div class="col-md-6">
+      <div class="p-3 border rounded bg-light">
+        <strong>Всего задач:</strong> {{ totalTaskCount }}
+      </div>
+    </div>
+    <div class="col-md-6">
+      <TaskStatusChart :statusCounts="statusStats" />
+    </div>
+  </div>
+</div>
+
+
+
       <!-- Список задач -->
       <div class="tasks-list mt-4">
         <div v-for="(task, index) in sheet.tasks" :key="task.id" class="task-item card mb-3">
@@ -48,8 +77,8 @@
                 <div class="task-meta">
                   <small class="text-muted">
                     <i class="bi bi-calendar"></i>
-                    {{ format(new Date(task.date_start), 'dd.MM.yyyy HH:mm', { locale: ru }) }} -
-                    {{ format(new Date(task.date_end), 'dd.MM.yyyy HH:mm', { locale: ru }) }}
+                    {{ cleanDateString(task.date_start) }}
+                    {{ cleanDateString(task.date_end) }}
                   </small>
                 </div>
               </div>
@@ -101,25 +130,33 @@
               </div>
 
               <!-- Форма добавления комментария -->
-              <div v-if="!sheet.confirmed" class="add-comment mt-3">
-                <div
-                  v-if="(task.user == userId || isManager) && statusesById[task.status]?.name !== 'Выполнено' && statusesById[task.status]?.name !== 'Не актуально'">
-                  <textarea v-model="newComments[task.id]" class="form-control mb-2"
-                    placeholder="Введите комментарий..." rows="2"></textarea>
-                  <button class="btn btn-sm btn-primary me-2" @click="addComment(task.id)">
-                    <i class="bi bi-send"></i> Добавить комментарий
-                  </button>
-                  <button v-if="!isManager && task.user === userId" class="btn btn-sm btn-outline-success me-2"
-                    @click="onStatusEditClick(task)" data-bs-toggle="modal" data-bs-target="#editStatusModal">
-                    <i class="bi bi-arrow-repeat"></i> Изменить статус задачи
-                  </button>
-                  <button class="btn btn-sm btn-outline-secondary me-2" v-if="hasUnreadComments(task.comments, task)"
-                    @click="markCommentsAsRead(task.id)">
-                    <i class="bi bi-eye"></i> Прочитать все
-                  </button>
-                </div>
+<div v-if="!sheet.confirmed" class="add-comment mt-3">
+  <div
+    v-if="(task.user == userId || isManager) && statusesById[task.status]?.name !== 'Выполнено' && statusesById[task.status]?.name !== 'Не актуально'">
+    
+    <textarea v-model="newComments[task.id]" class="form-control mb-2"
+      placeholder="Введите комментарий..." rows="2"></textarea>
+    
+    <button class="btn btn-sm btn-primary me-2" @click="addComment(task.id)">
+      <i class="bi bi-send"></i> Добавить комментарий
+    </button>
+    
+    <button
+      v-if="!isManager && task.user === userId && statusesById[task.status]?.name !== 'Запланировано'"
+      class="btn btn-sm btn-outline-success me-2"
+      @click="onStatusEditClick(task)" data-bs-toggle="modal" data-bs-target="#editStatusModal">
+      <i class="bi bi-arrow-repeat"></i> Изменить статус задачи
+    </button>
+  </div>
 
-              </div>
+  <!-- Обернули кнопку в отдельный div с отступом сверху -->
+  <div class="mt-2" v-if="hasUnreadComments(task.comments, task)">
+    <button class="btn btn-sm btn-outline-secondary" @click="markCommentsAsRead(task.id)">
+      <i class="bi bi-eye"></i> Прочитать все
+    </button>
+  </div>
+</div>
+
               <!-- Если лист архивный, то скрыть добавление комментария -->
               <div v-else class="text-muted small">
                 Новые комментарии запрещены для архивного листа.
@@ -311,12 +348,6 @@
 
 
 
-
-
-
-
-
-
       <!-- Кнопки действий -->
       <div class="actions mt-4">
         <router-link :to="sheet.confirmed ? '/sheets-archive/review' : '/sheets/review'" class="btn btn-secondary me-2">
@@ -373,6 +404,23 @@ const sheet = ref(null)
 const loading = ref(true)
 
 const isManager = computed(() => role.value === 'Manager')
+
+
+
+import TaskStatusChart from './TaskStatusChart.vue'; // импорт компонента
+
+const analytics = ref({ total_tasks: 0, total_sheets: 0, status_counts: {} });
+
+async function fetchAnalytics() {
+  const res = await axios.get(`/api/analytics/summary/?sheet_id=${sheet.value.id}`);
+  analytics.value = res.data;
+}
+const statusStats = computed(() => analytics.value.status_counts || {});
+const totalTaskCount = computed(() => analytics.value.total_tasks || 0);
+
+
+
+
 async function fetchUsers() {
   // Выполняем запрос для получения всех пользователей
   const response = await axios.get("/api/userssafe/"); // Запрос к API
@@ -556,6 +604,10 @@ function getAvailableStatuses(currentStatus) {
       return statuses.value.filter(status => status.name === 'Не актуально' || status.name === 'Ожидание подтверждения');
     } else if (currentStatus === 'На выполнении') {
       return statuses.value.filter(status => status.name === 'Не актуально');
+    } else if (currentStatus === 'Ожидание подтверждения') {
+      return statuses.value.filter(status => status.name === 'Не актуально');
+    } else if (currentStatus === 'Запланировано') {
+      return statuses.value.filter(status => status.name === 'Не актуально');
     }
   } else if (role.value === 'Executor') {
     // Логика для исполнителя
@@ -565,6 +617,8 @@ function getAvailableStatuses(currentStatus) {
       return statuses.value.filter(status => status.name === 'Выполнено' || status.name === 'Возникла проблема');
     } else if (currentStatus === 'Возникла проблема') {
       return statuses.value.filter(status => status.name === 'На выполнении');
+    } else if (currentStatus === 'Задерживается') {
+      return statuses.value.filter(status => status.name === 'Выполнено' || status.name === 'Возникла проблема');
     }
   }
   return statuses.value; // Если нет ограничения, показываем все статусы
@@ -589,8 +643,7 @@ const confirmSheet = async () => {
 function toDateTimeLocalString(date) {
   if (!date) return '';
   const d = new Date(date);
-  d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); // сдвигаем по UTC
-  return d.toISOString().slice(0, 16); // YYYY-MM-DDTHH:MM
+  return d.toISOString().slice(0, 16); // без ручного смещения
 }
 function toISOStringWithTimezoneFix(datetimeLocal) {
   const localDate = new Date(datetimeLocal);
@@ -601,11 +654,13 @@ function toUTCDateString(localDateTimeString) {
   return new Date(local.getTime() - local.getTimezoneOffset() * 60000).toISOString();
 }
 
-
+function cleanDateString(dateStr) {
+  return dateStr.replace('T', ' ').slice(0, 16); // '2025-04-26 10:00'
+}
 
 async function onTaskEditClick(task) {
   try {
-    const response = await axios.post('/api/comment/mark-read/', { task_id: taskId });
+    const response = await axios.post('/api/comment/mark-read/', { task_id: task.id });
     console.log(response.data); // { status: "Comments marked as read" }
   } catch (err) {
     console.error('Ошибка при пометке комментариев как прочитанных:', err);
@@ -614,6 +669,8 @@ async function onTaskEditClick(task) {
   taskToEdit.value.date_start = toDateTimeLocalString(task.date_start);
   taskToEdit.value.date_end = toDateTimeLocalString(task.date_end);
   aviable_statuses = getAvailableStatuses(statusesById.value[task.status]?.name);
+  console.log("aviable_statuses", aviable_statuses)
+  console.log("statusesById.value[task.status]?.name", statusesById.value[task.status]?.name)
 }
 
 async function onStatusEditClick(task) {
@@ -632,14 +689,14 @@ async function onStatusEditClick(task) {
 async function onUpdateTask() {
   const sheetId = taskToEdit.value.sheet;
   const taskId = taskToEdit.value.id;
-  taskToEdit.value.date_start = toUTCDateString(taskToEdit.value.date_start);
-  taskToEdit.value.date_end = toUTCDateString(taskToEdit.value.date_end);
+  //taskToEdit.value.date_start = toUTCDateString(taskToEdit.value.date_start);
+  //taskToEdit.value.date_end = toUTCDateString(taskToEdit.value.date_end);
   try {
     // Обновляем задачу
     await axios.put(`/api/sheets/${sheetId}/tasks/${taskId}/`, {
     ...taskToEdit.value,
-    date_start: toISOStringWithTimezoneFix(taskToEdit.value.date_start),
-    date_end: toISOStringWithTimezoneFix(taskToEdit.value.date_end),
+    //date_start: taskToEdit.value.date_start,
+    //date_end: taskToEdit.value.date_end,
   });
 
     var systemComment;
@@ -696,12 +753,17 @@ function getStatusClass(statusName) {
       return "bg-white";
   }
 }
+function formatDate(dateStr) {
+  const date = new Date(dateStr);
+  return format(date, 'dd.MM.yyyy HH:mm', { locale: ru });
+}
 
 onBeforeMount((async) => {
   fetchSheet();
   fetchUsers();
   fetchStatuses();
   fetchExecutors();
+  fetchAnalytics();
 
 })
 
