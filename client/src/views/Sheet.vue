@@ -720,6 +720,7 @@ async function onUpdateTask() {
     });
 
     await fetchSheet(); // Перезагрузка данных
+    await fetchAnalytics();
 
   } catch (error) {
     console.error('Ошибка при обновлении задачи:', error);
@@ -758,14 +759,16 @@ function formatDate(dateStr) {
   return format(date, 'dd.MM.yyyy HH:mm', { locale: ru });
 }
 
-onBeforeMount((async) => {
-  fetchSheet();
-  fetchUsers();
-  fetchStatuses();
-  fetchExecutors();
-  fetchAnalytics();
+onBeforeMount(() => {
+  (async () => {
+    await fetchSheet();         // ждем загрузки листа
+    await fetchAnalytics();     // теперь sheet.value.id точно есть
 
-})
+    fetchUsers();
+    fetchStatuses();
+    fetchExecutors();
+  })();
+});
 
 
 
