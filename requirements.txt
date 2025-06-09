@@ -4,3 +4,4 @@ django-mssql-backend==2.8.1
 pyodbc==5.2.0
 mssql-django==1.5
 djangorestframework
+python-dotenv

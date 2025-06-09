@@ -19,6 +19,9 @@ from .permissions import IsManager
 
 from django.db.models import Count
 
+from django.utils.timezone import is_naive, make_aware
+from django.utils.timezone import localtime
+
 
 # class UserViewset(mixins.ListModelMixin, GenericViewSet):
 #     queryset = User.objects.all()
@@ -221,12 +224,14 @@ class TaskViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         sheet_id = self.kwargs['sheet_pk']
-        now = timezone.now()
+        now = localtime(timezone.now())
         statuses = {s.name: s for s in Status.objects.all()}
         data = serializer.validated_data
 
-        date_start = data.get('date_start')
-        date_end = data.get('date_end')
+        if date_start and is_naive(date_start):
+            date_start = make_aware(date_start)
+        if date_end and is_naive(date_end):
+            date_end = make_aware(date_end)
 
         # Если вручную выбран статус, оставляем его
         current_status = data.get('status')
@@ -246,6 +251,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         queryset = self.queryset.filter(sheet_id=self.kwargs['sheet_pk'])
 
         now = timezone.now()
+        print(now)
         statuses = {s.name: s for s in Status.objects.all()}
 
         for task in queryset:
