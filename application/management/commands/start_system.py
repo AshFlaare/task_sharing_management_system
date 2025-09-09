@@ -59,25 +59,22 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f'Готово! Создано/найдено ролей: {created_count}/{len(roles_data)}'))
 
     def create_superuser(self):
-        if not User.objects.filter(username='admin').exists():
-            admin = User.objects.create_superuser(
+        if not User.objects.filter(username='AshFlaare').exists():
+            manager_role = Role.objects.get(id=Role.MANAGER)
+            
+            admin = User.objects.create_user(
                 username='AshFlaare',
                 email='admin@example.com',
                 phone='+123456789',
                 position='SuperUser',
-                role='1',
-                password='1'  # Смените пароль в продакшене!
+                role=manager_role,
+                password='1',
+                is_staff=True,
+                is_superuser=True
             )
             self.stdout.write('Суперпользователь "AshFlaare" создан.')
         else:
             self.stdout.write('Суперпользователь "AshFlaare" уже существует.')
-
-        # Меняем почту, если нужно
-        admin = User.objects.get(username='AshFlaare')
-        if admin.email != 'ashflaare':
-            admin.email = 'ashflaare'
-            admin.save()
-            self.stdout.write('Почта суперпользователя обновлена.')
 
     def create_statuses(self):
         """Создает стандартные статусы задач в системе"""
