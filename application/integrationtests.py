@@ -157,10 +157,10 @@ def run_integration_test():
         print("НАЧАЛО ИНТЕГРАЦИОННОГО ТЕСТА")
         print("="*60)
         
-        print("➡ Авторизация под админом (руководитель по умолчанию)...")
+        print("-> Авторизация под админом (руководитель по умолчанию)...")
         admin_session = login("admin@example.com", "1")
 
-        print("➡ Получаем список ролей...")
+        print("-> Получаем список ролей...")
         roles = get_roles(admin_session)
         role_head_id = roles.get("Manager")
         role_exec_id = roles.get("Executor")
@@ -168,23 +168,23 @@ def run_integration_test():
         assert role_head_id is not None, "Роль Manager не найдена"
         assert role_exec_id is not None, "Роль Executor не найдена"
 
-        print("➡ Создаём руководителя...")
+        print("-> Создаём руководителя...")
         head = register_user(admin_session, "TestHead", "head@example.com", "password123", "Начальник", role_head_id)
 
-        print("➡ Создаём исполнителя...")
+        print("-> Создаём исполнителя...")
         executor = register_user(admin_session, "TestExec", "exec@example.com", "password123", "Рабочий", role_exec_id)
 
-        print("➡ Выход из аккаунта админа...")
+        print("-> Выход из аккаунта админа...")
         logout(admin_session)
 
-        print("➡ Вход под исполнителем для проверки начального состояния...")
+        print("-> Вход под исполнителем для проверки начального состояния...")
         exec_session = login("exec@example.com", "password123")
         sheets_before = get_executor_sheets(exec_session)
         print(f"Листов задач до: {len(sheets_before)}")
         assert len(sheets_before) == 0, "У нового исполнителя уже есть листы"
         exec_session.close()
 
-        print("➡ Вход под новым руководителем и создание листа задач...")
+        print("-> Вход под новым руководителем и создание листа задач...")
         head_session = login("head@example.com", "password123")
 
         sheet_payload = {
@@ -209,7 +209,7 @@ def run_integration_test():
         print("Лист задач успешно создан.")
         head_session.close()
 
-        print("➡ Повторная проверка у исполнителя...")
+        print("-> Повторная проверка у исполнителя...")
         exec_session = login("exec@example.com", "password123")
         sheets_after = get_executor_sheets(exec_session)
         print(f"Листов задач после: {len(sheets_after)}")
