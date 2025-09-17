@@ -85,7 +85,7 @@ def get_executor_sheets(session):
 
 def delete_user(session, user_id):
     """Удаление пользователя по ID"""
-    if user_id == 1:  # Не удаляем администратора ashflaare
+    if user_id == 1:  # Не удаляем администратора
         print(f"Пропускаем удаление администратора (ID: {user_id})")
         return False
     
@@ -125,7 +125,7 @@ def cleanup_test_data():
     
     try:
         # Входим под администратором для удаления данных
-        admin_session = login("ashflaare", "1")
+        admin_session = login("admin@example.com", "1")
         
         # Удаляем созданные листы задач
         if test_sheets:
@@ -157,8 +157,8 @@ def run_integration_test():
         print("НАЧАЛО ИНТЕГРАЦИОННОГО ТЕСТА")
         print("="*60)
         
-        print("➡ Авторизация под ashflaare (руководитель по умолчанию)...")
-        admin_session = login("ashflaare", "1")
+        print("➡ Авторизация под админом (руководитель по умолчанию)...")
+        admin_session = login("admin@example.com", "1")
 
         print("➡ Получаем список ролей...")
         roles = get_roles(admin_session)
@@ -174,7 +174,7 @@ def run_integration_test():
         print("➡ Создаём исполнителя...")
         executor = register_user(admin_session, "TestExec", "exec@example.com", "password123", "Рабочий", role_exec_id)
 
-        print("➡ Выход из аккаунта ashflaare...")
+        print("➡ Выход из аккаунта админа...")
         logout(admin_session)
 
         print("➡ Вход под исполнителем для проверки начального состояния...")
